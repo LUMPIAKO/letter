@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open When… 💌</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;1,400&family=Dancing+Script:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  /* ─── RESET & BASE ─── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream:     #f5efe0;
+    --parchment: #e8dcc8;
+    --paper:     #fdf8f0;
+    --sepia:     #8b6914;
+    --burgundy:  #6b1f2a;
+    --ink:       #2c1810;
+    --wax:       #c0392b;
+    --gold:      #c9a227;
+    --shadow:    rgba(44,24,16,0.18);
+    --fold:      rgba(139,105,20,0.12);
+  }
+
+  html, body {
+    height: 100%;
+    font-family: 'Lora', Georgia, serif;
+    background: #1a0f08;
+    overflow: hidden;
+  }
+
+  /* ─── BACKGROUND ─── */
+  body::before {
+    content:'';
+    position:fixed; inset:0; z-index:0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 30%, #2e1508 0%, #0d0603 100%);
+  }
+  body::after {
+    content:'';
+    position:fixed; inset:0; z-index:0;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%230d0603'/%3E%3Ccircle cx='1' cy='1' r='0.6' fill='%231a0f08' opacity='0.7'/%3E%3C/svg%3E");
+    opacity:.6;
+  }
+
+  /* ─── SCENE ─── */
+  #scene {
+    position: fixed; inset: 0; z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 900px;
+  }
+
+  /* ─── ENVELOPE WRAPPER ─── */
+  #env-wrap {
+    position: relative;
+    width: 420px;
+    height: 300px;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    transition: transform .3s ease;
+  }
+  #env-wrap:hover { transform: scale(1.02) translateY(-4px); }
+  #env-wrap.opened { cursor: default; }
+
+  /* ─── ENVELOPE BODY ─── */
+  #envelope {
+    position: absolute; inset: 0;
+    background: var(--parchment);
+    border-radius: 4px 4px 8px 8px;
+    box-shadow:
+      0 8px 32px var(--shadow),
+      0 2px 8px var(--shadow),
+      inset 0 0 40px rgba(139,105,20,.07);
+    overflow: hidden;
+  }
+  /* Paper texture lines on envelope */
+  #envelope::before {
+    content:'';
+    position:absolute; inset:0;
+    background: repeating-linear-gradient(
+      transparent, transparent 23px,
+      rgba(139,105,20,.06) 23px, rgba(139,105,20,.06) 24px
+    );
+  }
+
+  /* ─── ENVELOPE TRIANGLES (side flaps & bottom) ─── */
+  .env-left, .env-right, .env-bottom {
+    position: absolute;
+    width: 0; height: 0;
+  }
+  .env-left {
+    top: 0; left: 0;
+    border-top: 150px solid transparent;
+    border-bottom: 150px solid transparent;
+    border-left: 210px solid rgba(139,105,20,.13);
+  }
+  .env-right {
+    top: 0; right: 0;
+    border-top: 150px solid transparent;
+    border-bottom: 150px solid transparent;
+    border-right: 210px solid rgba(139,105,20,.13);
+  }
+  .env-bottom {
+    bottom: 0; left: 0;
+    border-left: 210px solid transparent;
+    border-right: 210px solid transparent;
+    border-bottom: 160px solid rgba(107,31,42,.10);
+  }
+  /* center fold line */
+  .env-center-fold {
+    position:absolute; top:0; left:50%;
+    width:1px; height:100%;
+    background: rgba(139,105,20,.12);
+    transform: translateX(-50%);
+  }
+
+  /* ─── ENVELOPE FLAP (TOP) ─── */
+  #env-flap {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 0;
+    width: 0;
+    border-left: 210px solid transparent;
+    border-right: 210px solid transparent;
+    border-top: 165px solid var(--parchment);
+    transform-origin: top center;
+    transform: rotateX(0deg);
+    transition: transform .6s cubic-bezier(.4,0,.2,1), filter .6s;
+    z-index: 10;
+    filter: drop-shadow(0 4px 8px rgba(44,24,16,.18));
+  }
+  #env-flap::after {
+    content:'';
+    position:absolute;
+    top: -165px; left: -210px; right: -210px;
+    height: 165px;
+    background: linear-gradient(180deg, rgba(232,220,200,.0) 0%, rgba(107,31,42,.06) 100%);
+  }
+  #env-wrap.opened #env-flap {
+    transform: rotateX(180deg);
+    filter: drop-shadow(0 -4px 8px rgba(44,24,16,.22));
+  }
+
+  /* ─── WAX SEAL ─── */
+  #wax-seal {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 52px; height: 52px;
+    background: radial-gradient(circle at 38% 35%, #e74c3c, #922b21 60%, #641e16);
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(44,24,16,.4), inset 0 1px 3px rgba(255,255,255,.2);
+    z-index: 11;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    transition: opacity .3s, transform .3s;
+    pointer-events: none;
+    user-select: none;
+  }
+  #env-wrap.opened #wax-seal {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+
+  /* ─── LETTER ─── */
+  #letter-wrap {
+    position: absolute;
+    top: 10px; left: -55px; right: -55px;
+    bottom: 10px;
+    z-index: 5;
+    transform: translateY(100%) scaleY(0);
+    transform-origin: bottom center;
+    transition: transform .65s cubic-bezier(.4,0,.2,1) .1s, opacity .5s .1s;
+    opacity: 0;
+    pointer-events: none;
+  }
+  #env-wrap.opened #letter-wrap {
+    transform: translateY(-260px) scaleY(1);
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 20;
+  }
+
+  #letter {
+    width: 520px;
+    min-height: 720px;
+    background: var(--paper);
+    border-radius: 3px;
+    box-shadow:
+      0 12px 40px rgba(44,24,16,.35),
+      0 2px 8px rgba(44,24,16,.2),
+      inset 0 0 60px rgba(232,220,200,.3);
+    position: relative;
+    overflow: visible;
+    padding: 36px 36px 48px;
+  }
+  /* ruled lines */
+  #letter::before {
+    content:'';
+    position:absolute; inset:0;
+    background: repeating-linear-gradient(
+      transparent, transparent 31px,
+      rgba(107,31,42,.08) 31px, rgba(107,31,42,.08) 32px
+    );
+    top: 32px;
+    pointer-events:none;
+    border-radius:3px;
+  }
+  /* left margin line */
+  #letter::after {
+    content:'';
+    position:absolute; top:0; left:56px; bottom:0;
+    width:1px;
+    background: rgba(201,162,39,.2);
+    pointer-events:none;
+  }
+
+  /* ─── LETTER HEADER ─── */
+  #letter-header {
+    font-family: 'Dancing Script', cursive;
+    font-size: 13px;
+    color: var(--sepia);
+    opacity: .6;
+    margin-bottom: 20px;
+    text-align: right;
+  }
+
+  /* ─── LETTER BODY TEXT ─── */
+  #letter-body {
+    font-family: 'Dancing Script', cursive;
+    font-size: 19px;
+    line-height: 2;
+    color: #2c1810;
+    padding-bottom: 24px;
+  }
+  #letter-body p {
+    margin-bottom: 22px;
+    text-indent: 28px;
+  }
+  #letter-body em {
+    font-style: italic;
+    color: var(--burgundy);
+  }
+  #letter-body .salutation {
+    font-size: 28px;
+    font-weight: 600;
+    text-indent: 0;
+    margin-bottom: 28px;
+    color: var(--ink);
+    letter-spacing: .5px;
+  }
+  #letter-body .highlight {
+    font-size: 21px;
+    font-weight: 600;
+    color: var(--burgundy);
+    text-align: center;
+    text-indent: 0;
+    background: rgba(107,31,42,.06);
+    border-left: 3px solid rgba(107,31,42,.3);
+    padding: 10px 16px;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.6;
+    margin: 28px 0;
+  }
+  #letter-body .sign-off {
+    text-indent: 0;
+    margin-top: 32px;
+    font-size: 18px;
+    color: var(--sepia);
+    line-height: 1.8;
+  }
+  #letter-body .signature {
+    display: block;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--burgundy);
+    margin-top: 4px;
+  }
+
+  /* edit mode — paragraphs become editable */
+  body.edit-mode #letter-body p,
+  body.edit-mode #letter-body .salutation,
+  body.edit-mode #letter-body .highlight,
+  body.edit-mode #letter-body .sign-off {
+    cursor: text;
+    border-radius: 4px;
+    transition: background .15s;
+    outline: none;
+  }
+  body.edit-mode #letter-body p:hover,
+  body.edit-mode #letter-body .salutation:hover,
+  body.edit-mode #letter-body .highlight:hover,
+  body.edit-mode #letter-body .sign-off:hover {
+    background: rgba(107,31,42,.05);
+  }
+  body.edit-mode #letter-body p:focus,
+  body.edit-mode #letter-body .salutation:focus,
+  body.edit-mode #letter-body .highlight:focus,
+  body.edit-mode #letter-body .sign-off:focus {
+    background: rgba(255,255,255,.45);
+    box-shadow: 0 0 0 1px rgba(107,31,42,.25);
+  }
+  .edit-hint {
+    font-family: 'Lora', serif;
+    font-size: 11px;
+    color: rgba(107,31,42,.4);
+    text-align: center;
+    margin-bottom: 12px;
+    letter-spacing: .5px;
+    font-style: italic;
+  }
+
+  /* ─── LETTER CANVAS (content area) ─── */
+  #letter-canvas {
+    position: relative;
+    min-height: 420px;
+    width: 100%;
+  }
+
+  /* ─── DRAGGABLE ITEMS ─── */
+  .drag-item {
+    position: absolute;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+  }
+  .drag-item:active { cursor: grabbing; }
+  .drag-item.selected { outline: 2px dashed var(--burgundy); outline-offset: 3px; }
+
+  .drag-item .delete-btn {
+    position: absolute;
+    top: -10px; right: -10px;
+    width: 20px; height: 20px;
+    background: var(--burgundy);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 11px;
+    cursor: pointer;
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 100;
+    line-height: 1;
+  }
+  .drag-item.selected .delete-btn { display: flex; }
+
+  .drag-item .resize-handle {
+    position: absolute;
+    bottom: -6px; right: -6px;
+    width: 14px; height: 14px;
+    background: var(--gold);
+    border-radius: 50%;
+    cursor: se-resize;
+    display: none;
+    z-index: 100;
+  }
+  .drag-item.selected .resize-handle { display: block; }
+
+  /* picture item */
+  .pic-item img {
+    display: block;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: 2px;
+    box-shadow: 0 3px 10px rgba(44,24,16,.25);
+    pointer-events: none;
+  }
+  /* sticker item */
+  .sticker-item {
+    font-size: 40px;
+    line-height: 1;
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center; justify-content: center;
+  }
+  .sticker-item img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+  }
+  /* text item */
+  .text-item {
+    font-family: 'Dancing Script', cursive;
+    color: var(--ink);
+    font-size: 18px;
+    line-height: 1.5;
+    background: transparent;
+    border: none;
+    min-width: 80px;
+    min-height: 30px;
+    word-break: break-word;
+    overflow: hidden;
+  }
+  .text-item.editing {
+    outline: 1px solid rgba(107,31,42,.3);
+    background: rgba(255,255,255,.4);
+    cursor: text;
+  }
+
+  /* ─── EDITOR PANEL ─── */
+  #editor-panel {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 200;
+    padding: 14px 20px;
+    background: linear-gradient(to top, rgba(13,6,3,.97), rgba(13,6,3,.85));
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(201,162,39,.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .ep-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border: 1px solid rgba(201,162,39,.3);
+    border-radius: 6px;
+    background: rgba(201,162,39,.08);
+    color: var(--cream);
+    font-family: 'Lora', serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .ep-btn:hover {
+    background: rgba(201,162,39,.2);
+    border-color: rgba(201,162,39,.6);
+    transform: translateY(-1px);
+  }
+  .ep-btn.primary {
+    background: rgba(107,31,42,.6);
+    border-color: rgba(107,31,42,.8);
+  }
+  .ep-btn.primary:hover {
+    background: rgba(107,31,42,.85);
+  }
+  .ep-btn svg { width:15px; height:15px; flex-shrink:0; }
+
+  #text-color-inp {
+    width: 32px; height: 32px;
+    border: 1px solid rgba(201,162,39,.3);
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 2px;
+    background: rgba(201,162,39,.08);
+  }
+
+  /* ─── MODALS ─── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,.7);
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+    animation: fadeIn .2s;
+  }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+  .modal-box {
+    background: #1e100a;
+    border: 1px solid rgba(201,162,39,.2);
+    border-radius: 12px;
+    padding: 32px;
+    max-width: 440px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    color: var(--cream);
+    font-family: 'Lora', serif;
+  }
+  .modal-box h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    margin-bottom: 20px;
+    color: var(--gold);
+  }
+  .modal-box p { font-size:14px; line-height:1.6; opacity:.8; margin-bottom:16px; }
+  .modal-close {
+    position:absolute; top:16px; right:16px;
+    background: none; border: none; color: var(--cream);
+    font-size: 22px; cursor: pointer; opacity: .5;
+  }
+  .modal-close:hover { opacity: 1; }
+
+  #qr-container {
+    background: white;
+    padding: 16px;
+    border-radius: 8px;
+    display: inline-block;
+    margin: 12px auto;
+  }
+  .qr-url {
+    font-size: 12px;
+    opacity: .5;
+    word-break: break-all;
+    margin-top: 10px;
+  }
+  /* sticker picker */
+  #sticker-grid {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .sticker-opt {
+    font-size: 30px;
+    cursor: pointer;
+    width: 46px; height: 46px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:8px;
+    border: 1px solid rgba(201,162,39,.15);
+    background: rgba(201,162,39,.05);
+    transition: all .15s;
+  }
+  .sticker-opt:hover { background: rgba(201,162,39,.2); transform:scale(1.1); }
+
+  /* ─── HINT TEXT (view mode) ─── */
+  #hint {
+    position: fixed;
+    bottom: 36px; left: 50%;
+    transform: translateX(-50%);
+    color: rgba(232,220,200,.45);
+    font-family: 'Dancing Script', cursive;
+    font-size: 17px;
+    pointer-events: none;
+    z-index: 2;
+    text-align:center;
+    transition: opacity .5s;
+    white-space: nowrap;
+  }
+  #hint.hidden { opacity: 0; }
+
+  /* ─── SCROLL on letter when opened ─── */
+  #env-wrap.opened {
+    overflow: visible;
+  }
+
+  /* letter scroll container */
+  #letter-scroll {
+    max-height: 82vh;
+    overflow-y: auto;
+    border-radius: 3px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--sepia) transparent;
+  }
+  #letter-scroll::-webkit-scrollbar { width:4px; }
+  #letter-scroll::-webkit-scrollbar-thumb { background:var(--sepia); border-radius:2px; }
+
+  /* ─── DECORATIVE STAMP ─── */
+  .stamp {
+    position:absolute;
+    top:16px; right:16px;
+    width:44px; height:54px;
+    border:2px solid rgba(139,105,20,.25);
+    border-radius:3px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px;
+    background: rgba(255,255,255,.3);
+    box-shadow: inset 0 0 6px rgba(139,105,20,.1);
+  }
+
+  /* ─── POSTMARK ─── */
+  .postmark {
+    position: absolute;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Dancing Script', cursive;
+    font-size: 11px;
+    color: rgba(107,31,42,.3);
+    text-align: center;
+    white-space: nowrap;
+    letter-spacing: 1px;
+  }
+
+  /* ─── TOAST ─── */
+  #toast {
+    position: fixed;
+    top: 24px; left:50%;
+    transform: translateX(-50%) translateY(-80px);
+    z-index: 9999;
+    background: rgba(13,6,3,.95);
+    border: 1px solid rgba(201,162,39,.3);
+    color: var(--cream);
+    padding: 10px 22px;
+    border-radius: 30px;
+    font-family: 'Lora', serif;
+    font-size: 13px;
+    transition: transform .3s;
+    pointer-events:none;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ─── UPLOAD ZONES (hidden) ─── */
+  #file-pic, #file-sticker-custom, #file-import { display:none; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 480px) {
+    #env-wrap { width: 320px; height: 228px; }
+    #env-flap {
+      border-left-width: 160px;
+      border-right-width: 160px;
+      border-top-width: 126px;
+    }
+    .env-left { border-left-width:160px; border-top-width:114px; border-bottom-width:114px; }
+    .env-right { border-right-width:160px; border-top-width:114px; border-bottom-width:114px; }
+    .env-bottom { border-left-width:160px; border-right-width:160px; border-bottom-width:122px; }
+    #env-wrap.opened #letter-wrap { transform: translateY(-280px) scaleY(1); }
+    #letter { width: 290px; padding:24px 24px 36px; }
+    #editor-panel { gap:6px; padding:10px 12px; }
+    .ep-btn { padding:7px 11px; font-size:12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SCENE -->
+<div id="scene">
+  <div id="env-wrap">
+    <!-- Envelope body -->
+    <div id="envelope">
+      <div class="env-left"></div>
+      <div class="env-right"></div>
+      <div class="env-bottom"></div>
+      <div class="env-center-fold"></div>
+      <div class="stamp">💌</div>
+      <div class="postmark">Open When…</div>
+    </div>
+    <!-- Top flap -->
+    <div id="env-flap"></div>
+    <!-- Wax seal -->
+    <div id="wax-seal">❤</div>
+    <!-- Letter -->
+    <div id="letter-wrap">
+      <div id="letter-scroll">
+        <div id="letter">
+          <div id="letter-header">— with love —</div>
+          <div id="letter-body">
+            <p class="salutation" contenteditable="false">Dear Louisa,</p>
+            <p contenteditable="false">Hi! If you are reading this, I want to say <em>good luck</em> with your upcoming thesis defense and exams. I just want to let you know how I feel — to clear your mind, not to disrupt your focus or anything.</p>
+            <p contenteditable="false">I have been doing some thinking, and I just want to apologize for my part in how things kind of went bad. Even though you always assure me that you are just busy with your university stuff and will make time for me if those hardships are finished and I still overthink. I really regret leaving things in a tense atmosphere.</p>
+            <p contenteditable="false">Even though I can be kind of a dense person sometimes, I want you to know that <em>I love you.</em> What we have right now means everything to me. I really want to take things to the next level with you when the time is right, and I hope you never have to doubt where I stand — I'm not going anywhere.</p>
+            <p class="highlight" contenteditable="false">So, for now… Good luck on your upcoming defense and exams, and any other schoolwork. 🌸</p>
+            <p contenteditable="false">You don't have to worry about me — just focus on your tasks and everything else. I'm so proud of how hard you work and study. I'll always be cheering for you.</p>
+            <p class="sign-off" contenteditable="false">All my love,<br><span class="signature">always yours ❤</span></p>
+          </div>
+          <div id="letter-canvas"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HINT (view mode) -->
+<div id="hint">tap the envelope to open ✦</div>
+
+<!-- EDITOR PANEL (injected dynamically) -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- FILE INPUTS -->
+<input type="file" id="file-pic" accept="image/*" multiple>
+<input type="file" id="file-sticker-custom" accept="image/*">
+
+<script>
+// ═══════════════════════════════════════════════════
+//  EMBEDDED DATA (baked in on export — DO NOT EDIT)
+// ═══════════════════════════════════════════════════
+const EMBEDDED_DATA = null;
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+const IS_EDIT = location.search.includes('edit=true');
+const STORAGE_KEY = 'owletter_v2';
+
+let isOpen = false;
+let items = []; // [{id, type, x, y, w, h, content, fontSize, color, rotation}]
+let selectedId = null;
+let dragState = null;
+let resizeState = null;
+
+// ═══════════════════════════════════════════════════
+//  LOAD & SAVE DATA
+// ═══════════════════════════════════════════════════
+function loadData() {
+  try {
+    // Embedded data takes priority — baked in when you export/download
+    if (window.EMBEDDED_DATA) {
+      items = window.EMBEDDED_DATA.items || [];
+      if (window.EMBEDDED_DATA.body) {
+        document.getElementById('letter-body').innerHTML = window.EMBEDDED_DATA.body;
+      }
+      return;
+    }
+    // Fallback: localStorage (only works on the same device/browser)
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) items = JSON.parse(raw);
+    const body = localStorage.getItem(STORAGE_KEY + '_body');
+    if (body) document.getElementById('letter-body').innerHTML = body;
+  } catch(e) { items = []; }
+}
+
+function saveData() {
+  // Keep localStorage as in-session backup
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    localStorage.setItem(STORAGE_KEY + '_body', document.getElementById('letter-body').innerHTML);
+  } catch(e) {}
+
+  // Bake ALL data (including base64 images) into a fresh copy of this file and download it.
+  // Upload THAT downloaded file to Netlify — fully self-contained, no localStorage needed.
+  const embeddedData = {
+    items: items,
+    body: document.getElementById('letter-body').innerHTML
+  };
+
+  const currentHtml = document.documentElement.outerHTML;
+  const exportedHtml = currentHtml.replace(
+    'const EMBEDDED_DATA = null;',
+    'const EMBEDDED_DATA = ' + JSON.stringify(embeddedData) + ';'
+  );
+
+  const blob = new Blob(['<!DOCTYPE html>\n' + exportedHtml], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'open-when-letter.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  toast('Downloaded ✓  Upload this file to Netlify!');
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER ITEMS
+// ═══════════════════════════════════════════════════
+function renderAll() {
+  const canvas = document.getElementById('letter-canvas');
+  canvas.innerHTML = '';
+  items.forEach(item => renderItem(item));
+}
+
+function renderItem(item) {
+  const canvas = document.getElementById('letter-canvas');
+  const el = document.createElement('div');
+  el.className = 'drag-item';
+  el.dataset.id = item.id;
+  el.style.left = item.x + 'px';
+  el.style.top  = item.y + 'px';
+  el.style.width  = item.w + 'px';
+  el.style.height = item.h + 'px';
+  if (item.rotation) el.style.transform = `rotate(${item.rotation}deg)`;
+
+  if (item.type === 'pic') {
+    el.classList.add('pic-item');
+    const img = document.createElement('img');
+    img.src = item.content;
+    el.appendChild(img);
+  } else if (item.type === 'sticker') {
+    el.classList.add('sticker-item');
+    el.style.fontSize = item.w * 0.75 + 'px';
+    if (item.content.startsWith('data:') || item.content.startsWith('http')) {
+      const img = document.createElement('img');
+      img.src = item.content;
+      el.appendChild(img);
+    } else {
+      el.textContent = item.content;
+    }
+  } else if (item.type === 'text') {
+    el.classList.add('text-item');
+    el.style.fontSize = (item.fontSize || 18) + 'px';
+    el.style.color = item.color || '#2c1810';
+    el.style.width = item.w + 'px';
+    el.innerHTML = item.content.replace(/\n/g,'<br>');
+  }
+
+  if (IS_EDIT) {
+    // delete btn
+    const del = document.createElement('button');
+    del.className = 'delete-btn';
+    del.innerHTML = '×';
+    del.addEventListener('pointerdown', e => { e.stopPropagation(); deleteItem(item.id); });
+    el.appendChild(del);
+
+    // resize handle
+    const rh = document.createElement('div');
+    rh.className = 'resize-handle';
+    rh.addEventListener('pointerdown', e => startResize(e, item.id));
+    el.appendChild(rh);
+
+    // drag
+    el.addEventListener('pointerdown', e => startDrag(e, item.id));
+
+    // double-click text to edit
+    if (item.type === 'text') {
+      el.addEventListener('dblclick', e => { e.stopPropagation(); beginTextEdit(el, item.id); });
+    }
+
+    // select
+    el.addEventListener('click', e => { e.stopPropagation(); selectItem(item.id); });
+  }
+
+  canvas.appendChild(el);
+}
+
+function selectItem(id) {
+  if (!IS_EDIT) return;
+  selectedId = id;
+  document.querySelectorAll('.drag-item').forEach(el => {
+    el.classList.toggle('selected', el.dataset.id === id);
+  });
+}
+
+function deleteItem(id) {
+  items = items.filter(i => i.id !== id);
+  renderAll();
+  selectedId = null;
+}
+
+// ═══════════════════════════════════════════════════
+//  DRAG
+// ═══════════════════════════════════════════════════
+function startDrag(e, id) {
+  if (e.target.classList.contains('resize-handle') || e.target.classList.contains('delete-btn')) return;
+  if (document.querySelector(`[data-id="${id}"]`)?.classList.contains('editing')) return;
+  e.preventDefault();
+  selectItem(id);
+  const el = document.querySelector(`[data-id="${id}"]`);
+  const item = items.find(i => i.id === id);
+  const rect = el.getBoundingClientRect();
+  const cRect = document.getElementById('letter-canvas').getBoundingClientRect();
+  dragState = {
+    id,
+    startX: (e.touches ? e.touches[0].clientX : e.clientX) - rect.left,
+    startY: (e.touches ? e.touches[0].clientY : e.clientY) - rect.top,
+    canvasLeft: cRect.left,
+    canvasTop: cRect.top
+  };
+}
+
+function onPointerMove(e) {
+  if (dragState) {
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    const item = items.find(i => i.id === dragState.id);
+    if (!item) return;
+    item.x = cx - dragState.canvasLeft - dragState.startX;
+    item.y = cy - dragState.canvasTop  - dragState.startY;
+    const el = document.querySelector(`[data-id="${dragState.id}"]`);
+    if (el) { el.style.left = item.x+'px'; el.style.top = item.y+'px'; }
+  }
+  if (resizeState) {
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    const item = items.find(i => i.id === resizeState.id);
+    if (!item) return;
+    const newW = Math.max(30, resizeState.origW + (cx - resizeState.startX));
+    const newH = Math.max(30, resizeState.origH + (cy - resizeState.startY));
+    item.w = newW; item.h = newH;
+    if (item.type === 'sticker') item.fontSize = newW * 0.75;
+    const el = document.querySelector(`[data-id="${resizeState.id}"]`);
+    if (el) {
+      el.style.width = newW+'px'; el.style.height = newH+'px';
+      if (item.type === 'sticker') el.style.fontSize = item.fontSize+'px';
+    }
+  }
+}
+
+function onPointerUp(e) {
+  dragState = null;
+  resizeState = null;
+}
+
+function startResize(e, id) {
+  e.preventDefault(); e.stopPropagation();
+  const item = items.find(i => i.id === id);
+  resizeState = {
+    id,
+    startX: e.touches ? e.touches[0].clientX : e.clientX,
+    startY: e.touches ? e.touches[0].clientY : e.clientY,
+    origW: item.w,
+    origH: item.h
+  };
+}
+
+document.addEventListener('pointermove', onPointerMove);
+document.addEventListener('pointerup',   onPointerUp);
+document.addEventListener('touchmove',   onPointerMove, {passive:false});
+document.addEventListener('touchend',    onPointerUp);
+
+// ═══════════════════════════════════════════════════
+//  TEXT EDITING
+// ═══════════════════════════════════════════════════
+function beginTextEdit(el, id) {
+  el.classList.add('editing');
+  el.contentEditable = 'true';
+  el.focus();
+  el.addEventListener('blur', () => {
+    el.contentEditable = 'false';
+    el.classList.remove('editing');
+    const item = items.find(i => i.id === id);
+    if (item) item.content = el.innerText;
+  }, { once: true });
+}
+
+// ═══════════════════════════════════════════════════
+//  UNIQUE ID
+// ═══════════════════════════════════════════════════
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// ═══════════════════════════════════════════════════
+//  ADD ITEMS
+// ═══════════════════════════════════════════════════
+function addPicture(dataUrl) {
+  const item = { id: uid(), type:'pic', x:20, y:20, w:140, h:120, content:dataUrl };
+  items.push(item);
+  renderItem(item);
+  selectItem(item.id);
+}
+
+function addSticker(content, isImage=false) {
+  const item = { id:uid(), type:'sticker', x:30+Math.random()*100, y:30+Math.random()*80, w:52, h:52, content };
+  items.push(item);
+  renderItem(item);
+  selectItem(item.id);
+  closeModal();
+}
+
+function addText() {
+  const color = document.getElementById('text-color-inp')?.value || '#2c1810';
+  const item = { id:uid(), type:'text', x:30, y:50+items.length*24, w:200, h:50, content:'Write here…', fontSize:18, color };
+  items.push(item);
+  renderItem(item);
+  selectItem(item.id);
+  // auto-focus
+  setTimeout(() => {
+    const el = document.querySelector(`[data-id="${item.id}"]`);
+    if (el) beginTextEdit(el, item.id);
+  }, 50);
+}
+
+// ═══════════════════════════════════════════════════
+//  ENVELOPE TOGGLE
+// ═══════════════════════════════════════════════════
+const envWrap = document.getElementById('env-wrap');
+
+envWrap.addEventListener('click', function(e) {
+  if (IS_EDIT && isOpen) {
+    // In edit mode, clicks on the letter shouldn't close
+    if (e.target.closest('#letter-wrap')) return;
+  }
+  if (!IS_EDIT || !isOpen) {
+    toggleEnvelope();
+  }
+});
+
+function toggleEnvelope() {
+  isOpen = !isOpen;
+  envWrap.classList.toggle('opened', isOpen);
+  const hint = document.getElementById('hint');
+  if (hint) hint.classList.toggle('hidden', isOpen);
+
+  if (IS_EDIT && isOpen) {
+    // Open envelope and enter edit state
+    envWrap.style.cursor = 'default';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  MODALS
+// ═══════════════════════════════════════════════════
+let activeModal = null;
+
+function openModal(html) {
+  closeModal();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal-box" style="position:relative">${html}</div>`;
+  overlay.querySelector('.modal-box').addEventListener('click', e=>e.stopPropagation());
+  overlay.addEventListener('click', closeModal);
+  document.body.appendChild(overlay);
+  activeModal = overlay;
+}
+
+function closeModal() {
+  if (activeModal) { activeModal.remove(); activeModal = null; }
+}
+
+// ─── STICKER PICKER ───
+function openStickerPicker() {
+  const emojis = ['❤️','⭐','😊','🌸','🎁','🐻','🦋','🌹','✨','🎀','🌙','☁️','🍀','🎵','💫','🐝','🌻','🎊','🦄','🌈'];
+  const opts = emojis.map(e=>`<div class="sticker-opt" onclick="addSticker('${e}')">${e}</div>`).join('');
+  openModal(`
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h2>Add a Sticker</h2>
+    <div id="sticker-grid">${opts}</div>
+    <button class="ep-btn" onclick="document.getElementById('file-sticker-custom').click()">📎 Upload custom image</button>
+  `);
+}
+
+// ─── QR CODE ───
+function openQRModal() {
+  const viewUrl = location.href.replace(/[?&]edit=true/g,'').replace(/[?&]edit$/,'');
+  openModal(`
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h2>Share with Recipient</h2>
+    <p>Let them scan this to open their letter — no editing controls will appear.</p>
+    <div style="text-align:center">
+      <div id="qr-container"></div>
+      <div class="qr-url">${viewUrl}</div>
+    </div>
+    <br>
+    <button class="ep-btn" onclick="copyUrl('${viewUrl}')">📋 Copy link</button>
+  `);
+  setTimeout(()=>{
+    new QRCode(document.getElementById('qr-container'), {
+      text: viewUrl, width:180, height:180,
+      colorDark:'#2c1810', colorLight:'#ffffff'
+    });
+  }, 50);
+}
+
+function copyUrl(url) {
+  navigator.clipboard.writeText(url).then(()=>toast('Link copied!'));
+}
+
+// ═══════════════════════════════════════════════════
+//  EDITOR PANEL BUILD
+// ═══════════════════════════════════════════════════
+function buildEditorPanel() {
+  const panel = document.createElement('div');
+  panel.id = 'editor-panel';
+  panel.innerHTML = `
+    <button class="ep-btn" onclick="document.getElementById('file-pic').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+      Picture
+    </button>
+    <button class="ep-btn" onclick="openStickerPicker()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      Sticker
+    </button>
+    <button class="ep-btn" onclick="addText()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4,7 4,4 20,4 20,7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+      Text
+    </button>
+    <input type="color" id="text-color-inp" value="#2c1810" title="Text color">
+    <button class="ep-btn primary" onclick="saveData()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+      Save &amp; Export
+    </button>
+    <button class="ep-btn" onclick="openQRModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="16" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/></svg>
+      QR Code
+    </button>
+    <button class="ep-btn" onclick="if(confirm('Reset all content?')){items=[];renderAll();saveData();}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 .49-3.85"/></svg>
+      Reset
+    </button>
+  `;
+  document.body.appendChild(panel);
+}
+
+// ═══════════════════════════════════════════════════
+//  FILE INPUTS
+// ═══════════════════════════════════════════════════
+document.getElementById('file-pic').addEventListener('change', function() {
+  Array.from(this.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => addPicture(e.target.result);
+    reader.readAsDataURL(file);
+  });
+  this.value = '';
+});
+
+document.getElementById('file-sticker-custom').addEventListener('change', function() {
+  const file = this.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => addSticker(e.target.result, true);
+  reader.readAsDataURL(file);
+  this.value = '';
+});
+
+// Deselect on canvas click
+document.getElementById('letter-canvas').addEventListener('click', () => {
+  selectedId = null;
+  document.querySelectorAll('.drag-item').forEach(el => el.classList.remove('selected'));
+});
+
+// ═══════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+function init() {
+  loadData();
+  renderAll();
+
+  if (IS_EDIT) {
+    document.body.classList.add('edit-mode');
+    // Make all letter-body paragraphs editable
+    document.querySelectorAll('#letter-body p, #letter-body .salutation, #letter-body .highlight, #letter-body .sign-off').forEach(el => {
+      el.contentEditable = 'true';
+    });
+    // Add a small hint above the canvas
+    const hint = document.createElement('div');
+    hint.className = 'edit-hint';
+    hint.textContent = '✦ click any paragraph above to edit · add stickers & pictures below ✦';
+    document.getElementById('letter-canvas').before(hint);
+
+    buildEditorPanel();
+    setTimeout(() => toggleEnvelope(), 400);
+    document.getElementById('hint').style.display = 'none';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
